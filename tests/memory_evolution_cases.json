@@ -1,0 +1,2337 @@
+{
+  "version": "1.1.0",
+  "split_rule": "按虚构用户分组，主题 01–02 用于调试，03–08 留出",
+  "demo": {
+    "id": "demo",
+    "title": "驾车音频偏好的六次会话",
+    "user_id": "synthetic-demo",
+    "steps": [
+      {
+        "id": "record",
+        "label": "录入两种偏好",
+        "at": "2026-10-01T12:00:00+08:00",
+        "scene": "daytime",
+        "text": "白天开车我喜欢听播客。晚间回家路上我喜欢听轻音乐。",
+        "expected": null,
+        "forbidden": [],
+        "writes": [
+          {
+            "predicate": "驾车音频偏好",
+            "value": "播客",
+            "content": "白天开车喜欢听播客",
+            "scene": "daytime",
+            "valid_to": null
+          },
+          {
+            "predicate": "驾车音频偏好",
+            "value": "轻音乐",
+            "content": "晚间下班回家路上喜欢听轻音乐",
+            "scene": "evening_return",
+            "valid_to": null
+          }
+        ],
+        "session_id": "demo-record"
+      },
+      {
+        "id": "restart",
+        "label": "重启后跨会话复用",
+        "at": "2026-10-01T18:00:00+08:00",
+        "scene": "evening_return",
+        "text": "今天下班回家的路上听点什么？",
+        "expected": [
+          "轻音乐"
+        ],
+        "forbidden": [
+          "播客"
+        ],
+        "writes": [],
+        "session_id": "demo-restart"
+      },
+      {
+        "id": "exception",
+        "label": "当晚临时例外",
+        "at": "2026-10-01T19:00:00+08:00",
+        "scene": "evening_return",
+        "text": "今天头疼，回去别放音乐。",
+        "expected": [
+          "保持安静"
+        ],
+        "forbidden": [
+          "轻音乐",
+          "播客"
+        ],
+        "writes": [
+          {
+            "predicate": "驾车音频偏好",
+            "value": "保持安静",
+            "content": "今晚回家路上保持安静，不放音乐",
+            "scene": "evening_return",
+            "valid_to": "2026-10-02T00:00:00+08:00"
+          }
+        ],
+        "session_id": "demo-exception"
+      },
+      {
+        "id": "expire",
+        "label": "次日晚间例外到期",
+        "at": "2026-10-02T18:00:00+08:00",
+        "scene": "evening_return",
+        "text": "今天下班回家的路上听点什么？",
+        "expected": [
+          "轻音乐"
+        ],
+        "forbidden": [
+          "保持安静",
+          "播客"
+        ],
+        "writes": [],
+        "stale": [
+          "保持安静"
+        ],
+        "followups": [
+          {
+            "id": "expire-feedback",
+            "label": "这次不适用",
+            "at": "2026-10-02T18:10:00+08:00",
+            "scene": "evening_return",
+            "text": "轻音乐这次不适用。",
+            "expected": null,
+            "forbidden": [],
+            "writes": [],
+            "feedback": {
+              "from_step": "expire",
+              "target": "轻音乐"
+            },
+            "session_id": "demo-expire"
+          }
+        ],
+        "session_id": "demo-expire"
+      },
+      {
+        "id": "correct",
+        "label": "确认长期更正",
+        "at": "2026-10-02T19:00:00+08:00",
+        "scene": "evening_return",
+        "text": "以后晚上开车都别推荐音乐了。",
+        "expected": [
+          "不推荐音乐"
+        ],
+        "forbidden": [
+          "轻音乐",
+          "播客"
+        ],
+        "writes": [],
+        "feedback": {
+          "from_step": "expire",
+          "target": "轻音乐",
+          "replacement": {
+            "predicate": "驾车音频偏好",
+            "value": "不推荐音乐",
+            "content": "以后晚上开车都不推荐音乐",
+            "scene": "evening_return",
+            "valid_to": null
+          }
+        },
+        "stale": [
+          "轻音乐"
+        ],
+        "followups": [
+          {
+            "id": "correct-night",
+            "label": "更正后夜间复查",
+            "at": "2026-10-02T19:10:00+08:00",
+            "scene": "evening_return",
+            "text": "今晚下班回家的路上听什么？",
+            "expected": [
+              "不推荐音乐"
+            ],
+            "forbidden": [
+              "轻音乐",
+              "播客"
+            ],
+            "writes": [],
+            "stale": [
+              "轻音乐"
+            ],
+            "session_id": "demo-correct"
+          },
+          {
+            "id": "correct-day",
+            "label": "更正后白天复查",
+            "at": "2026-10-03T12:00:00+08:00",
+            "scene": "daytime",
+            "text": "白天开车听点什么？",
+            "expected": [
+              "播客"
+            ],
+            "forbidden": [
+              "轻音乐",
+              "不推荐音乐"
+            ],
+            "writes": [],
+            "session_id": "demo-correct-day"
+          }
+        ],
+        "session_id": "demo-correct"
+      },
+      {
+        "id": "unrelated",
+        "label": "无关天气问题",
+        "at": "2026-10-03T13:00:00+08:00",
+        "scene": "daytime",
+        "text": "明天会下雨吗？",
+        "expected": [],
+        "forbidden": [],
+        "writes": [],
+        "unrelated": true,
+        "session_id": "demo-unrelated"
+      }
+    ]
+  },
+  "cases": [
+    {
+      "id": "unrelated-01",
+      "title": "晚餐 · 重启后询问无关问题",
+      "user_id": "synthetic-01",
+      "split": "debug",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在晚餐方面通常选择清蒸鱼",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晚餐偏好",
+              "value": "清蒸鱼",
+              "content": "我在晚餐方面通常选择清蒸鱼",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "unrelated-01-record"
+        },
+        {
+          "id": "probe",
+          "label": "重启后询问无关问题",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "水杯上写了哪个字？",
+          "expected": [],
+          "forbidden": [],
+          "writes": [],
+          "unrelated": true,
+          "session_id": "unrelated-01-probe"
+        }
+      ]
+    },
+    {
+      "id": "correction-01",
+      "title": "晚餐 · 再次询问更正后的偏好",
+      "user_id": "synthetic-01",
+      "split": "debug",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在晚餐方面通常选择清蒸鱼",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晚餐偏好",
+              "value": "清蒸鱼",
+              "content": "我在晚餐方面通常选择清蒸鱼",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-01-record"
+        },
+        {
+          "id": "change",
+          "label": "确认长期更正",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "以后晚餐改为番茄面。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晚餐偏好",
+              "value": "番茄面",
+              "content": "我在晚餐方面通常选择番茄面",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-01-change"
+        },
+        {
+          "id": "probe",
+          "label": "再次询问更正后的偏好",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "晚餐吃什么好？",
+          "expected": [
+            "番茄面"
+          ],
+          "forbidden": [
+            "清蒸鱼"
+          ],
+          "writes": [],
+          "stale": [
+            "清蒸鱼"
+          ],
+          "session_id": "correction-01-probe"
+        }
+      ]
+    },
+    {
+      "id": "expiry-01",
+      "title": "晚餐 · 例外过期后询问",
+      "user_id": "synthetic-01",
+      "split": "debug",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在晚餐方面通常选择清蒸鱼",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晚餐偏好",
+              "value": "清蒸鱼",
+              "content": "我在晚餐方面通常选择清蒸鱼",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "expiry-01-record"
+        },
+        {
+          "id": "temporary",
+          "label": "当日临时例外",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "今天晚餐先选荠菜馄饨",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晚餐偏好",
+              "value": "荠菜馄饨",
+              "content": "今天晚餐先选荠菜馄饨",
+              "scene": "default",
+              "valid_to": "2026-10-10T00:00:00+08:00"
+            }
+          ],
+          "session_id": "expiry-01-temporary"
+        },
+        {
+          "id": "active",
+          "label": "例外有效时询问",
+          "at": "2026-10-09T18:00:00+08:00",
+          "scene": "daytime",
+          "text": "晚餐吃什么好？",
+          "expected": [
+            "荠菜馄饨"
+          ],
+          "forbidden": [
+            "清蒸鱼"
+          ],
+          "writes": [],
+          "session_id": "expiry-01-active"
+        },
+        {
+          "id": "probe",
+          "label": "例外过期后询问",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "晚餐吃什么好？",
+          "expected": [
+            "清蒸鱼"
+          ],
+          "forbidden": [
+            "荠菜馄饨"
+          ],
+          "writes": [],
+          "stale": [
+            "荠菜馄饨"
+          ],
+          "session_id": "expiry-01-probe"
+        }
+      ]
+    },
+    {
+      "id": "scene-01",
+      "title": "晚餐 · 白天按场景复用",
+      "user_id": "synthetic-01",
+      "split": "debug",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "白天晚餐我选清蒸鱼，晚间回家时晚餐我选番茄面。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晚餐偏好",
+              "value": "清蒸鱼",
+              "content": "白天晚餐我选清蒸鱼",
+              "scene": "daytime",
+              "valid_to": null
+            },
+            {
+              "predicate": "晚餐偏好",
+              "value": "番茄面",
+              "content": "晚间回家时晚餐我选番茄面",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "session_id": "scene-01-record"
+        },
+        {
+          "id": "other-user",
+          "label": "同库另一位虚构用户",
+          "at": "2026-10-08T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "晚间回家时晚餐我选荠菜馄饨。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晚餐偏好",
+              "value": "荠菜馄饨",
+              "content": "晚间回家时晚餐我选荠菜馄饨",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "user_id": "other-01",
+          "session_id": "scene-01-other-user"
+        },
+        {
+          "id": "probe",
+          "label": "晚间按场景复用",
+          "at": "2026-10-09T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "晚餐吃什么好？",
+          "expected": [
+            "番茄面"
+          ],
+          "forbidden": [
+            "清蒸鱼",
+            "荠菜馄饨"
+          ],
+          "writes": [],
+          "session_id": "scene-01-probe"
+        },
+        {
+          "id": "day",
+          "label": "白天按场景复用",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "晚餐吃什么好？",
+          "expected": [
+            "清蒸鱼"
+          ],
+          "forbidden": [
+            "番茄面",
+            "荠菜馄饨"
+          ],
+          "writes": [],
+          "session_id": "scene-01-day"
+        }
+      ]
+    },
+    {
+      "id": "unrelated-02",
+      "title": "晨跑 · 重启后询问无关问题",
+      "user_id": "synthetic-02",
+      "split": "debug",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在晨跑方面通常选择公园步道",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晨跑偏好",
+              "value": "公园步道",
+              "content": "我在晨跑方面通常选择公园步道",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "unrelated-02-record"
+        },
+        {
+          "id": "probe",
+          "label": "重启后询问无关问题",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "邮票是什么形状？",
+          "expected": [],
+          "forbidden": [],
+          "writes": [],
+          "unrelated": true,
+          "session_id": "unrelated-02-probe"
+        }
+      ]
+    },
+    {
+      "id": "correction-02",
+      "title": "晨跑 · 再次询问更正后的偏好",
+      "user_id": "synthetic-02",
+      "split": "debug",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在晨跑方面通常选择公园步道",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晨跑偏好",
+              "value": "公园步道",
+              "content": "我在晨跑方面通常选择公园步道",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-02-record"
+        },
+        {
+          "id": "change",
+          "label": "确认长期更正",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "以后晨跑改为河边跑道。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晨跑偏好",
+              "value": "河边跑道",
+              "content": "我在晨跑方面通常选择河边跑道",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-02-change"
+        },
+        {
+          "id": "probe",
+          "label": "再次询问更正后的偏好",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "晨跑去哪里？",
+          "expected": [
+            "河边跑道"
+          ],
+          "forbidden": [
+            "公园步道"
+          ],
+          "writes": [],
+          "stale": [
+            "公园步道"
+          ],
+          "session_id": "correction-02-probe"
+        }
+      ]
+    },
+    {
+      "id": "expiry-02",
+      "title": "晨跑 · 例外过期后询问",
+      "user_id": "synthetic-02",
+      "split": "debug",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在晨跑方面通常选择公园步道",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晨跑偏好",
+              "value": "公园步道",
+              "content": "我在晨跑方面通常选择公园步道",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "expiry-02-record"
+        },
+        {
+          "id": "temporary",
+          "label": "当日临时例外",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "今天晨跑先选体育场跑道",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晨跑偏好",
+              "value": "体育场跑道",
+              "content": "今天晨跑先选体育场跑道",
+              "scene": "default",
+              "valid_to": "2026-10-10T00:00:00+08:00"
+            }
+          ],
+          "session_id": "expiry-02-temporary"
+        },
+        {
+          "id": "active",
+          "label": "例外有效时询问",
+          "at": "2026-10-09T18:00:00+08:00",
+          "scene": "daytime",
+          "text": "晨跑去哪里？",
+          "expected": [
+            "体育场跑道"
+          ],
+          "forbidden": [
+            "公园步道"
+          ],
+          "writes": [],
+          "session_id": "expiry-02-active"
+        },
+        {
+          "id": "probe",
+          "label": "例外过期后询问",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "晨跑去哪里？",
+          "expected": [
+            "公园步道"
+          ],
+          "forbidden": [
+            "体育场跑道"
+          ],
+          "writes": [],
+          "stale": [
+            "体育场跑道"
+          ],
+          "session_id": "expiry-02-probe"
+        }
+      ]
+    },
+    {
+      "id": "scene-02",
+      "title": "晨跑 · 白天按场景复用",
+      "user_id": "synthetic-02",
+      "split": "debug",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "白天晨跑我选公园步道，晚间回家时晨跑我选河边跑道。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晨跑偏好",
+              "value": "公园步道",
+              "content": "白天晨跑我选公园步道",
+              "scene": "daytime",
+              "valid_to": null
+            },
+            {
+              "predicate": "晨跑偏好",
+              "value": "河边跑道",
+              "content": "晚间回家时晨跑我选河边跑道",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "session_id": "scene-02-record"
+        },
+        {
+          "id": "other-user",
+          "label": "同库另一位虚构用户",
+          "at": "2026-10-08T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "晚间回家时晨跑我选体育场跑道。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "晨跑偏好",
+              "value": "体育场跑道",
+              "content": "晚间回家时晨跑我选体育场跑道",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "user_id": "other-02",
+          "session_id": "scene-02-other-user"
+        },
+        {
+          "id": "probe",
+          "label": "晚间按场景复用",
+          "at": "2026-10-09T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "晨跑去哪里？",
+          "expected": [
+            "河边跑道"
+          ],
+          "forbidden": [
+            "公园步道",
+            "体育场跑道"
+          ],
+          "writes": [],
+          "session_id": "scene-02-probe"
+        },
+        {
+          "id": "day",
+          "label": "白天按场景复用",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "晨跑去哪里？",
+          "expected": [
+            "公园步道"
+          ],
+          "forbidden": [
+            "河边跑道",
+            "体育场跑道"
+          ],
+          "writes": [],
+          "session_id": "scene-02-day"
+        }
+      ]
+    },
+    {
+      "id": "unrelated-03",
+      "title": "阅读 · 重启后询问无关问题",
+      "user_id": "synthetic-03",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在阅读方面通常选择历史小说",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "阅读偏好",
+              "value": "历史小说",
+              "content": "我在阅读方面通常选择历史小说",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "unrelated-03-record"
+        },
+        {
+          "id": "probe",
+          "label": "重启后询问无关问题",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "几何三角形有几条边？",
+          "expected": [],
+          "forbidden": [],
+          "writes": [],
+          "unrelated": true,
+          "session_id": "unrelated-03-probe"
+        }
+      ]
+    },
+    {
+      "id": "correction-03",
+      "title": "阅读 · 再次询问更正后的偏好",
+      "user_id": "synthetic-03",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在阅读方面通常选择历史小说",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "阅读偏好",
+              "value": "历史小说",
+              "content": "我在阅读方面通常选择历史小说",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-03-record"
+        },
+        {
+          "id": "change",
+          "label": "确认长期更正",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "以后阅读改为科幻小说。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "阅读偏好",
+              "value": "科幻小说",
+              "content": "我在阅读方面通常选择科幻小说",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-03-change"
+        },
+        {
+          "id": "probe",
+          "label": "再次询问更正后的偏好",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "阅读时间推荐什么书？",
+          "expected": [
+            "科幻小说"
+          ],
+          "forbidden": [
+            "历史小说"
+          ],
+          "writes": [],
+          "stale": [
+            "历史小说"
+          ],
+          "session_id": "correction-03-probe"
+        }
+      ]
+    },
+    {
+      "id": "expiry-03",
+      "title": "阅读 · 例外过期后询问",
+      "user_id": "synthetic-03",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在阅读方面通常选择历史小说",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "阅读偏好",
+              "value": "历史小说",
+              "content": "我在阅读方面通常选择历史小说",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "expiry-03-record"
+        },
+        {
+          "id": "temporary",
+          "label": "当日临时例外",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "今天阅读先选散文随笔",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "阅读偏好",
+              "value": "散文随笔",
+              "content": "今天阅读先选散文随笔",
+              "scene": "default",
+              "valid_to": "2026-10-10T00:00:00+08:00"
+            }
+          ],
+          "session_id": "expiry-03-temporary"
+        },
+        {
+          "id": "active",
+          "label": "例外有效时询问",
+          "at": "2026-10-09T18:00:00+08:00",
+          "scene": "daytime",
+          "text": "阅读时间推荐什么书？",
+          "expected": [
+            "散文随笔"
+          ],
+          "forbidden": [
+            "历史小说"
+          ],
+          "writes": [],
+          "session_id": "expiry-03-active"
+        },
+        {
+          "id": "probe",
+          "label": "例外过期后询问",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "阅读时间推荐什么书？",
+          "expected": [
+            "历史小说"
+          ],
+          "forbidden": [
+            "散文随笔"
+          ],
+          "writes": [],
+          "stale": [
+            "散文随笔"
+          ],
+          "session_id": "expiry-03-probe"
+        }
+      ]
+    },
+    {
+      "id": "scene-03",
+      "title": "阅读 · 白天按场景复用",
+      "user_id": "synthetic-03",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "白天阅读我选历史小说，晚间回家时阅读我选科幻小说。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "阅读偏好",
+              "value": "历史小说",
+              "content": "白天阅读我选历史小说",
+              "scene": "daytime",
+              "valid_to": null
+            },
+            {
+              "predicate": "阅读偏好",
+              "value": "科幻小说",
+              "content": "晚间回家时阅读我选科幻小说",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "session_id": "scene-03-record"
+        },
+        {
+          "id": "other-user",
+          "label": "同库另一位虚构用户",
+          "at": "2026-10-08T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "晚间回家时阅读我选散文随笔。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "阅读偏好",
+              "value": "散文随笔",
+              "content": "晚间回家时阅读我选散文随笔",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "user_id": "other-03",
+          "session_id": "scene-03-other-user"
+        },
+        {
+          "id": "probe",
+          "label": "晚间按场景复用",
+          "at": "2026-10-09T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "阅读时间推荐什么书？",
+          "expected": [
+            "科幻小说"
+          ],
+          "forbidden": [
+            "历史小说",
+            "散文随笔"
+          ],
+          "writes": [],
+          "session_id": "scene-03-probe"
+        },
+        {
+          "id": "day",
+          "label": "白天按场景复用",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "阅读时间推荐什么书？",
+          "expected": [
+            "历史小说"
+          ],
+          "forbidden": [
+            "科幻小说",
+            "散文随笔"
+          ],
+          "writes": [],
+          "session_id": "scene-03-day"
+        }
+      ]
+    },
+    {
+      "id": "unrelated-04",
+      "title": "咖啡 · 重启后询问无关问题",
+      "user_id": "synthetic-04",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在咖啡方面通常选择无糖拿铁",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "咖啡偏好",
+              "value": "无糖拿铁",
+              "content": "我在咖啡方面通常选择无糖拿铁",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "unrelated-04-record"
+        },
+        {
+          "id": "probe",
+          "label": "重启后询问无关问题",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "北极有企鹅吗？",
+          "expected": [],
+          "forbidden": [],
+          "writes": [],
+          "unrelated": true,
+          "session_id": "unrelated-04-probe"
+        }
+      ]
+    },
+    {
+      "id": "correction-04",
+      "title": "咖啡 · 再次询问更正后的偏好",
+      "user_id": "synthetic-04",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在咖啡方面通常选择无糖拿铁",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "咖啡偏好",
+              "value": "无糖拿铁",
+              "content": "我在咖啡方面通常选择无糖拿铁",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-04-record"
+        },
+        {
+          "id": "change",
+          "label": "确认长期更正",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "以后咖啡改为冰美式。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "咖啡偏好",
+              "value": "冰美式",
+              "content": "我在咖啡方面通常选择冰美式",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-04-change"
+        },
+        {
+          "id": "probe",
+          "label": "再次询问更正后的偏好",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "咖啡该点哪种？",
+          "expected": [
+            "冰美式"
+          ],
+          "forbidden": [
+            "无糖拿铁"
+          ],
+          "writes": [],
+          "stale": [
+            "无糖拿铁"
+          ],
+          "session_id": "correction-04-probe"
+        }
+      ]
+    },
+    {
+      "id": "expiry-04",
+      "title": "咖啡 · 例外过期后询问",
+      "user_id": "synthetic-04",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在咖啡方面通常选择无糖拿铁",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "咖啡偏好",
+              "value": "无糖拿铁",
+              "content": "我在咖啡方面通常选择无糖拿铁",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "expiry-04-record"
+        },
+        {
+          "id": "temporary",
+          "label": "当日临时例外",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "今天咖啡先选热摩卡",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "咖啡偏好",
+              "value": "热摩卡",
+              "content": "今天咖啡先选热摩卡",
+              "scene": "default",
+              "valid_to": "2026-10-10T00:00:00+08:00"
+            }
+          ],
+          "session_id": "expiry-04-temporary"
+        },
+        {
+          "id": "active",
+          "label": "例外有效时询问",
+          "at": "2026-10-09T18:00:00+08:00",
+          "scene": "daytime",
+          "text": "咖啡该点哪种？",
+          "expected": [
+            "热摩卡"
+          ],
+          "forbidden": [
+            "无糖拿铁"
+          ],
+          "writes": [],
+          "session_id": "expiry-04-active"
+        },
+        {
+          "id": "probe",
+          "label": "例外过期后询问",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "咖啡该点哪种？",
+          "expected": [
+            "无糖拿铁"
+          ],
+          "forbidden": [
+            "热摩卡"
+          ],
+          "writes": [],
+          "stale": [
+            "热摩卡"
+          ],
+          "session_id": "expiry-04-probe"
+        }
+      ]
+    },
+    {
+      "id": "scene-04",
+      "title": "咖啡 · 白天按场景复用",
+      "user_id": "synthetic-04",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "白天咖啡我选无糖拿铁，晚间回家时咖啡我选冰美式。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "咖啡偏好",
+              "value": "无糖拿铁",
+              "content": "白天咖啡我选无糖拿铁",
+              "scene": "daytime",
+              "valid_to": null
+            },
+            {
+              "predicate": "咖啡偏好",
+              "value": "冰美式",
+              "content": "晚间回家时咖啡我选冰美式",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "session_id": "scene-04-record"
+        },
+        {
+          "id": "other-user",
+          "label": "同库另一位虚构用户",
+          "at": "2026-10-08T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "晚间回家时咖啡我选热摩卡。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "咖啡偏好",
+              "value": "热摩卡",
+              "content": "晚间回家时咖啡我选热摩卡",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "user_id": "other-04",
+          "session_id": "scene-04-other-user"
+        },
+        {
+          "id": "probe",
+          "label": "晚间按场景复用",
+          "at": "2026-10-09T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "咖啡该点哪种？",
+          "expected": [
+            "冰美式"
+          ],
+          "forbidden": [
+            "无糖拿铁",
+            "热摩卡"
+          ],
+          "writes": [],
+          "session_id": "scene-04-probe"
+        },
+        {
+          "id": "day",
+          "label": "白天按场景复用",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "咖啡该点哪种？",
+          "expected": [
+            "无糖拿铁"
+          ],
+          "forbidden": [
+            "冰美式",
+            "热摩卡"
+          ],
+          "writes": [],
+          "session_id": "scene-04-day"
+        }
+      ]
+    },
+    {
+      "id": "unrelated-05",
+      "title": "早餐 · 重启后询问无关问题",
+      "user_id": "synthetic-05",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在早餐方面通常选择红豆粥",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "早餐偏好",
+              "value": "红豆粥",
+              "content": "我在早餐方面通常选择红豆粥",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "unrelated-05-record"
+        },
+        {
+          "id": "probe",
+          "label": "重启后询问无关问题",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "蜻蜓有几只眼睛？",
+          "expected": [],
+          "forbidden": [],
+          "writes": [],
+          "unrelated": true,
+          "session_id": "unrelated-05-probe"
+        }
+      ]
+    },
+    {
+      "id": "correction-05",
+      "title": "早餐 · 再次询问更正后的偏好",
+      "user_id": "synthetic-05",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在早餐方面通常选择红豆粥",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "早餐偏好",
+              "value": "红豆粥",
+              "content": "我在早餐方面通常选择红豆粥",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-05-record"
+        },
+        {
+          "id": "change",
+          "label": "确认长期更正",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "以后早餐改为全麦吐司。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "早餐偏好",
+              "value": "全麦吐司",
+              "content": "我在早餐方面通常选择全麦吐司",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-05-change"
+        },
+        {
+          "id": "probe",
+          "label": "再次询问更正后的偏好",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "早餐吃什么合适？",
+          "expected": [
+            "全麦吐司"
+          ],
+          "forbidden": [
+            "红豆粥"
+          ],
+          "writes": [],
+          "stale": [
+            "红豆粥"
+          ],
+          "session_id": "correction-05-probe"
+        }
+      ]
+    },
+    {
+      "id": "expiry-05",
+      "title": "早餐 · 例外过期后询问",
+      "user_id": "synthetic-05",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在早餐方面通常选择红豆粥",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "早餐偏好",
+              "value": "红豆粥",
+              "content": "我在早餐方面通常选择红豆粥",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "expiry-05-record"
+        },
+        {
+          "id": "temporary",
+          "label": "当日临时例外",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "今天早餐先选玉米饼",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "早餐偏好",
+              "value": "玉米饼",
+              "content": "今天早餐先选玉米饼",
+              "scene": "default",
+              "valid_to": "2026-10-10T00:00:00+08:00"
+            }
+          ],
+          "session_id": "expiry-05-temporary"
+        },
+        {
+          "id": "active",
+          "label": "例外有效时询问",
+          "at": "2026-10-09T18:00:00+08:00",
+          "scene": "daytime",
+          "text": "早餐吃什么合适？",
+          "expected": [
+            "玉米饼"
+          ],
+          "forbidden": [
+            "红豆粥"
+          ],
+          "writes": [],
+          "session_id": "expiry-05-active"
+        },
+        {
+          "id": "probe",
+          "label": "例外过期后询问",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "早餐吃什么合适？",
+          "expected": [
+            "红豆粥"
+          ],
+          "forbidden": [
+            "玉米饼"
+          ],
+          "writes": [],
+          "stale": [
+            "玉米饼"
+          ],
+          "session_id": "expiry-05-probe"
+        }
+      ]
+    },
+    {
+      "id": "scene-05",
+      "title": "早餐 · 白天按场景复用",
+      "user_id": "synthetic-05",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "白天早餐我选红豆粥，晚间回家时早餐我选全麦吐司。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "早餐偏好",
+              "value": "红豆粥",
+              "content": "白天早餐我选红豆粥",
+              "scene": "daytime",
+              "valid_to": null
+            },
+            {
+              "predicate": "早餐偏好",
+              "value": "全麦吐司",
+              "content": "晚间回家时早餐我选全麦吐司",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "session_id": "scene-05-record"
+        },
+        {
+          "id": "other-user",
+          "label": "同库另一位虚构用户",
+          "at": "2026-10-08T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "晚间回家时早餐我选玉米饼。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "早餐偏好",
+              "value": "玉米饼",
+              "content": "晚间回家时早餐我选玉米饼",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "user_id": "other-05",
+          "session_id": "scene-05-other-user"
+        },
+        {
+          "id": "probe",
+          "label": "晚间按场景复用",
+          "at": "2026-10-09T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "早餐吃什么合适？",
+          "expected": [
+            "全麦吐司"
+          ],
+          "forbidden": [
+            "红豆粥",
+            "玉米饼"
+          ],
+          "writes": [],
+          "session_id": "scene-05-probe"
+        },
+        {
+          "id": "day",
+          "label": "白天按场景复用",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "早餐吃什么合适？",
+          "expected": [
+            "红豆粥"
+          ],
+          "forbidden": [
+            "全麦吐司",
+            "玉米饼"
+          ],
+          "writes": [],
+          "session_id": "scene-05-day"
+        }
+      ]
+    },
+    {
+      "id": "unrelated-06",
+      "title": "写作 · 重启后询问无关问题",
+      "user_id": "synthetic-06",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在写作方面通常选择纸质笔记本",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "写作偏好",
+              "value": "纸质笔记本",
+              "content": "我在写作方面通常选择纸质笔记本",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "unrelated-06-record"
+        },
+        {
+          "id": "probe",
+          "label": "重启后询问无关问题",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "太阳从哪边升起？",
+          "expected": [],
+          "forbidden": [],
+          "writes": [],
+          "unrelated": true,
+          "session_id": "unrelated-06-probe"
+        }
+      ]
+    },
+    {
+      "id": "correction-06",
+      "title": "写作 · 再次询问更正后的偏好",
+      "user_id": "synthetic-06",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在写作方面通常选择纸质笔记本",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "写作偏好",
+              "value": "纸质笔记本",
+              "content": "我在写作方面通常选择纸质笔记本",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-06-record"
+        },
+        {
+          "id": "change",
+          "label": "确认长期更正",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "以后写作改为语音备忘。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "写作偏好",
+              "value": "语音备忘",
+              "content": "我在写作方面通常选择语音备忘",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-06-change"
+        },
+        {
+          "id": "probe",
+          "label": "再次询问更正后的偏好",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "写作时该用什么工具？",
+          "expected": [
+            "语音备忘"
+          ],
+          "forbidden": [
+            "纸质笔记本"
+          ],
+          "writes": [],
+          "stale": [
+            "纸质笔记本"
+          ],
+          "session_id": "correction-06-probe"
+        }
+      ]
+    },
+    {
+      "id": "expiry-06",
+      "title": "写作 · 例外过期后询问",
+      "user_id": "synthetic-06",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在写作方面通常选择纸质笔记本",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "写作偏好",
+              "value": "纸质笔记本",
+              "content": "我在写作方面通常选择纸质笔记本",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "expiry-06-record"
+        },
+        {
+          "id": "temporary",
+          "label": "当日临时例外",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "今天写作先选Markdown 编辑器",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "写作偏好",
+              "value": "Markdown 编辑器",
+              "content": "今天写作先选Markdown 编辑器",
+              "scene": "default",
+              "valid_to": "2026-10-10T00:00:00+08:00"
+            }
+          ],
+          "session_id": "expiry-06-temporary"
+        },
+        {
+          "id": "active",
+          "label": "例外有效时询问",
+          "at": "2026-10-09T18:00:00+08:00",
+          "scene": "daytime",
+          "text": "写作时该用什么工具？",
+          "expected": [
+            "Markdown 编辑器"
+          ],
+          "forbidden": [
+            "纸质笔记本"
+          ],
+          "writes": [],
+          "session_id": "expiry-06-active"
+        },
+        {
+          "id": "probe",
+          "label": "例外过期后询问",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "写作时该用什么工具？",
+          "expected": [
+            "纸质笔记本"
+          ],
+          "forbidden": [
+            "Markdown 编辑器"
+          ],
+          "writes": [],
+          "stale": [
+            "Markdown 编辑器"
+          ],
+          "session_id": "expiry-06-probe"
+        }
+      ]
+    },
+    {
+      "id": "scene-06",
+      "title": "写作 · 白天按场景复用",
+      "user_id": "synthetic-06",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "白天写作我选纸质笔记本，晚间回家时写作我选语音备忘。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "写作偏好",
+              "value": "纸质笔记本",
+              "content": "白天写作我选纸质笔记本",
+              "scene": "daytime",
+              "valid_to": null
+            },
+            {
+              "predicate": "写作偏好",
+              "value": "语音备忘",
+              "content": "晚间回家时写作我选语音备忘",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "session_id": "scene-06-record"
+        },
+        {
+          "id": "other-user",
+          "label": "同库另一位虚构用户",
+          "at": "2026-10-08T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "晚间回家时写作我选Markdown 编辑器。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "写作偏好",
+              "value": "Markdown 编辑器",
+              "content": "晚间回家时写作我选Markdown 编辑器",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "user_id": "other-06",
+          "session_id": "scene-06-other-user"
+        },
+        {
+          "id": "probe",
+          "label": "晚间按场景复用",
+          "at": "2026-10-09T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "写作时该用什么工具？",
+          "expected": [
+            "语音备忘"
+          ],
+          "forbidden": [
+            "纸质笔记本",
+            "Markdown 编辑器"
+          ],
+          "writes": [],
+          "session_id": "scene-06-probe"
+        },
+        {
+          "id": "day",
+          "label": "白天按场景复用",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "写作时该用什么工具？",
+          "expected": [
+            "纸质笔记本"
+          ],
+          "forbidden": [
+            "语音备忘",
+            "Markdown 编辑器"
+          ],
+          "writes": [],
+          "session_id": "scene-06-day"
+        }
+      ]
+    },
+    {
+      "id": "unrelated-07",
+      "title": "羽毛球 · 重启后询问无关问题",
+      "user_id": "synthetic-07",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在羽毛球方面通常选择训练馆",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "羽毛球偏好",
+              "value": "训练馆",
+              "content": "我在羽毛球方面通常选择训练馆",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "unrelated-07-record"
+        },
+        {
+          "id": "probe",
+          "label": "重启后询问无关问题",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "墙上挂钟用几节电池？",
+          "expected": [],
+          "forbidden": [],
+          "writes": [],
+          "unrelated": true,
+          "session_id": "unrelated-07-probe"
+        }
+      ]
+    },
+    {
+      "id": "correction-07",
+      "title": "羽毛球 · 再次询问更正后的偏好",
+      "user_id": "synthetic-07",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在羽毛球方面通常选择训练馆",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "羽毛球偏好",
+              "value": "训练馆",
+              "content": "我在羽毛球方面通常选择训练馆",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-07-record"
+        },
+        {
+          "id": "change",
+          "label": "确认长期更正",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "以后羽毛球改为社区球场。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "羽毛球偏好",
+              "value": "社区球场",
+              "content": "我在羽毛球方面通常选择社区球场",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-07-change"
+        },
+        {
+          "id": "probe",
+          "label": "再次询问更正后的偏好",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "羽毛球去哪里打？",
+          "expected": [
+            "社区球场"
+          ],
+          "forbidden": [
+            "训练馆"
+          ],
+          "writes": [],
+          "stale": [
+            "训练馆"
+          ],
+          "session_id": "correction-07-probe"
+        }
+      ]
+    },
+    {
+      "id": "expiry-07",
+      "title": "羽毛球 · 例外过期后询问",
+      "user_id": "synthetic-07",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在羽毛球方面通常选择训练馆",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "羽毛球偏好",
+              "value": "训练馆",
+              "content": "我在羽毛球方面通常选择训练馆",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "expiry-07-record"
+        },
+        {
+          "id": "temporary",
+          "label": "当日临时例外",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "今天羽毛球先选学校体育馆",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "羽毛球偏好",
+              "value": "学校体育馆",
+              "content": "今天羽毛球先选学校体育馆",
+              "scene": "default",
+              "valid_to": "2026-10-10T00:00:00+08:00"
+            }
+          ],
+          "session_id": "expiry-07-temporary"
+        },
+        {
+          "id": "active",
+          "label": "例外有效时询问",
+          "at": "2026-10-09T18:00:00+08:00",
+          "scene": "daytime",
+          "text": "羽毛球去哪里打？",
+          "expected": [
+            "学校体育馆"
+          ],
+          "forbidden": [
+            "训练馆"
+          ],
+          "writes": [],
+          "session_id": "expiry-07-active"
+        },
+        {
+          "id": "probe",
+          "label": "例外过期后询问",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "羽毛球去哪里打？",
+          "expected": [
+            "训练馆"
+          ],
+          "forbidden": [
+            "学校体育馆"
+          ],
+          "writes": [],
+          "stale": [
+            "学校体育馆"
+          ],
+          "session_id": "expiry-07-probe"
+        }
+      ]
+    },
+    {
+      "id": "scene-07",
+      "title": "羽毛球 · 白天按场景复用",
+      "user_id": "synthetic-07",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "白天羽毛球我选训练馆，晚间回家时羽毛球我选社区球场。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "羽毛球偏好",
+              "value": "训练馆",
+              "content": "白天羽毛球我选训练馆",
+              "scene": "daytime",
+              "valid_to": null
+            },
+            {
+              "predicate": "羽毛球偏好",
+              "value": "社区球场",
+              "content": "晚间回家时羽毛球我选社区球场",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "session_id": "scene-07-record"
+        },
+        {
+          "id": "other-user",
+          "label": "同库另一位虚构用户",
+          "at": "2026-10-08T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "晚间回家时羽毛球我选学校体育馆。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "羽毛球偏好",
+              "value": "学校体育馆",
+              "content": "晚间回家时羽毛球我选学校体育馆",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "user_id": "other-07",
+          "session_id": "scene-07-other-user"
+        },
+        {
+          "id": "probe",
+          "label": "晚间按场景复用",
+          "at": "2026-10-09T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "羽毛球去哪里打？",
+          "expected": [
+            "社区球场"
+          ],
+          "forbidden": [
+            "训练馆",
+            "学校体育馆"
+          ],
+          "writes": [],
+          "session_id": "scene-07-probe"
+        },
+        {
+          "id": "day",
+          "label": "白天按场景复用",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "羽毛球去哪里打？",
+          "expected": [
+            "训练馆"
+          ],
+          "forbidden": [
+            "社区球场",
+            "学校体育馆"
+          ],
+          "writes": [],
+          "session_id": "scene-07-day"
+        }
+      ]
+    },
+    {
+      "id": "unrelated-08",
+      "title": "旅行 · 重启后询问无关问题",
+      "user_id": "synthetic-08",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在旅行方面通常选择坐火车",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "旅行偏好",
+              "value": "坐火车",
+              "content": "我在旅行方面通常选择坐火车",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "unrelated-08-record"
+        },
+        {
+          "id": "probe",
+          "label": "重启后询问无关问题",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "窗台盆栽叶片是什么形状？",
+          "expected": [],
+          "forbidden": [],
+          "writes": [],
+          "unrelated": true,
+          "session_id": "unrelated-08-probe"
+        }
+      ]
+    },
+    {
+      "id": "correction-08",
+      "title": "旅行 · 再次询问更正后的偏好",
+      "user_id": "synthetic-08",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在旅行方面通常选择坐火车",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "旅行偏好",
+              "value": "坐火车",
+              "content": "我在旅行方面通常选择坐火车",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-08-record"
+        },
+        {
+          "id": "change",
+          "label": "确认长期更正",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "以后旅行改为自驾。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "旅行偏好",
+              "value": "自驾",
+              "content": "我在旅行方面通常选择自驾",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "correction-08-change"
+        },
+        {
+          "id": "probe",
+          "label": "再次询问更正后的偏好",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "旅行选什么交通方式？",
+          "expected": [
+            "自驾"
+          ],
+          "forbidden": [
+            "坐火车"
+          ],
+          "writes": [],
+          "stale": [
+            "坐火车"
+          ],
+          "session_id": "correction-08-probe"
+        }
+      ]
+    },
+    {
+      "id": "expiry-08",
+      "title": "旅行 · 例外过期后询问",
+      "user_id": "synthetic-08",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "我在旅行方面通常选择坐火车",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "旅行偏好",
+              "value": "坐火车",
+              "content": "我在旅行方面通常选择坐火车",
+              "scene": "default",
+              "valid_to": null
+            }
+          ],
+          "session_id": "expiry-08-record"
+        },
+        {
+          "id": "temporary",
+          "label": "当日临时例外",
+          "at": "2026-10-09T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "今天旅行先选坐轮渡",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "旅行偏好",
+              "value": "坐轮渡",
+              "content": "今天旅行先选坐轮渡",
+              "scene": "default",
+              "valid_to": "2026-10-10T00:00:00+08:00"
+            }
+          ],
+          "session_id": "expiry-08-temporary"
+        },
+        {
+          "id": "active",
+          "label": "例外有效时询问",
+          "at": "2026-10-09T18:00:00+08:00",
+          "scene": "daytime",
+          "text": "旅行选什么交通方式？",
+          "expected": [
+            "坐轮渡"
+          ],
+          "forbidden": [
+            "坐火车"
+          ],
+          "writes": [],
+          "session_id": "expiry-08-active"
+        },
+        {
+          "id": "probe",
+          "label": "例外过期后询问",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "旅行选什么交通方式？",
+          "expected": [
+            "坐火车"
+          ],
+          "forbidden": [
+            "坐轮渡"
+          ],
+          "writes": [],
+          "stale": [
+            "坐轮渡"
+          ],
+          "session_id": "expiry-08-probe"
+        }
+      ]
+    },
+    {
+      "id": "scene-08",
+      "title": "旅行 · 白天按场景复用",
+      "user_id": "synthetic-08",
+      "split": "holdout",
+      "steps": [
+        {
+          "id": "record",
+          "label": "写入原始偏好",
+          "at": "2026-10-08T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "白天旅行我选坐火车，晚间回家时旅行我选自驾。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "旅行偏好",
+              "value": "坐火车",
+              "content": "白天旅行我选坐火车",
+              "scene": "daytime",
+              "valid_to": null
+            },
+            {
+              "predicate": "旅行偏好",
+              "value": "自驾",
+              "content": "晚间回家时旅行我选自驾",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "session_id": "scene-08-record"
+        },
+        {
+          "id": "other-user",
+          "label": "同库另一位虚构用户",
+          "at": "2026-10-08T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "晚间回家时旅行我选坐轮渡。",
+          "expected": null,
+          "forbidden": [],
+          "writes": [
+            {
+              "predicate": "旅行偏好",
+              "value": "坐轮渡",
+              "content": "晚间回家时旅行我选坐轮渡",
+              "scene": "evening_return",
+              "valid_to": null
+            }
+          ],
+          "user_id": "other-08",
+          "session_id": "scene-08-other-user"
+        },
+        {
+          "id": "probe",
+          "label": "晚间按场景复用",
+          "at": "2026-10-09T19:00:00+08:00",
+          "scene": "evening_return",
+          "text": "旅行选什么交通方式？",
+          "expected": [
+            "自驾"
+          ],
+          "forbidden": [
+            "坐火车",
+            "坐轮渡"
+          ],
+          "writes": [],
+          "session_id": "scene-08-probe"
+        },
+        {
+          "id": "day",
+          "label": "白天按场景复用",
+          "at": "2026-10-10T12:00:00+08:00",
+          "scene": "daytime",
+          "text": "旅行选什么交通方式？",
+          "expected": [
+            "坐火车"
+          ],
+          "forbidden": [
+            "自驾",
+            "坐轮渡"
+          ],
+          "writes": [],
+          "session_id": "scene-08-day"
+        }
+      ]
+    }
+  ]
+}
